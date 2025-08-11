@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Climbing Competition Results</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    form { display: flex; flex-direction: column; gap: 10px; max-width: 400px; }
+    label { font-weight: bold; }
+    button { padding: 8px; cursor: pointer; }
+    .attempt-box {
+      border: 1px solid #ccc;
+      padding: 8px;
+      margin-bottom: 10px;
+      border-radius: 6px;
+      background-color: #f9f9f9;
+    }
+    .attempt-box button {
+      margin-right: 8px;
+    }
+    #error { color: red; font-weight: bold; }
+  </style>
+</head>
+<body>
+
+  <h1>Enter Climber Result</h1>
+  <div id="error"></div>
+
+  <form id="resultForm">
+    <label>Climber Name:
+      <select id="climber" required>
+        <option value="">Loading climbers...</option>
+      </select>
+      <div id="submittedSummary" style="font-weight: bold; color: #555;"></div>
+    </label>
+
+    <label>Route Number:
+      <select id="route" required>
+        <option value="">Loading routes...</option>
+      </select>
+    </label>
+
+    <label>Attempts:</label>
+    <div id="attemptsContainer"></div>
+    <button type="button" id="addAttempt">➕ Add Attempt</button>
+    <div id="validationWarning" style="color: red; font-weight: bold;"></div>
+    <button type="submit">Submit</button>
+  </form>
+
+<script>
+  let attempts = [];
+
+  document.addEventListener('DOMContentLoaded', () => {
+    loadFormOptions();
+  });
+
+  document.getElementById('addAttempt').addEventListener('click', () => {
+    const attemptNum = attempts.length + 1;
+    const attempt = { number: attemptNum, bonus: false, top: false };
+    attempts.push(attempt);
+    renderAttempts();
+  });
+
+  function renderAttempts() {
+    const container = document.getElementById('attemptsContainer');
+    container.innerHTML = '';
+
+    attempts.forEach((a, index) => {
+      const div = document.createElement('div');
+      div.className = 'attempt-box';
+      div.innerHTML = `
+        <strong>Attempt ${a.number}</strong>
+        <button type="button" onclick="toggleBonus(${index})">
+          ${a.bonus ? 'Bonus ✅' : 'Bonus ❌'}
+        </button>
+        <button type="button" onclick="toggleTop(${index})">
+          ${a.top ? 'Top ✅' : 'Top ❌'}
+        </button>
+      `;
+      container.appendChild(div);
+    });
+  }
+
+  function toggleBonus(index) {
+    attempts[index].bonus = !attempts[index].bonus;
+    renderAttempts();
+  }
+
+  function toggleTop(index) {
+    attempts[index].top = !attempts[index].top;
+    renderAttempts();
+  }
+
+  document.getElementById('resultForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const climber = document.getElementById('climber').value;
+    const route = document.getElementById('route').value;
+
+    const routeOption = document.querySelector(`#route option[value="${route}"]`);
+    if (routeOption && routeOption.disabled) {
+      alert('This result has already been submitted.');
+      return;
+    }
+
+    let bonusAchieved = false;
+    for (let i = 0; i < attempts.length; i++) {
+      const a = attempts[i];
+      if (a.top && !a.bonus && !bonusAchieved) {
+        alert(`Invalid result: Top achieved on attempt ${a.number} before any bonus was recorded.`);
+        return;
+      }
+      if (a.bonus) bonusAchieved = true;
+    }
+
+    const data = { climber, route, attempts };
+
+    const res = await fetch('/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+
+    if (res.ok) {
+      alert('Result submitted successfully!');
+      e.target.reset();
+      attempts = [];
+      renderAttempts();
+      await loadFormOptions();
+    } else {
+      alert('Error submitting result');
+    }
+  });
+
+  async function loadFormOptions() {
+    try {
+      const [dataRes, submittedRes] = await Promise.all([
+        fetch('/data'),
+        fetch('/submitted.json')
+      ]);
+
+      const { climbers, routes } = await dataRes.json();
+      const submitted = await submittedRes.json();
+
+      const climberSelect = document.getElementById('climber');
+      const routeSelect = document.getElementById('route');
+      const summaryBox = document.getElementById('submittedSummary');
+
+      climberSelect.innerHTML = '<option value="">Select Climber</option>';
+      routeSelect.innerHTML = '<option value="">Select Route</option>';
+
+      climbers.forEach(climber => {
+        const option = document.createElement('option');
+        option.value = climber;
+        option.textContent = climber;
+        climberSelect.appendChild(option);
+      });
+
+      function updateRouteOptions() {
+        const selectedClimber = climberSelect.value;
+        routeSelect.innerHTML = '<option value="">Select Route</option>';
+
+        const submittedRoutes = [];
+
+        routes.forEach(route => {
+          const isSubmitted = submitted.some(entry =>
+            entry.climber === selectedClimber && entry.route === route
+          );
+
+          if (isSubmitted) submittedRoutes.push(route);
+
+          const option = document.createElement('option');
+          option.value = route;
+          option.textContent = route + (isSubmitted ? ' (submitted)' : '');
+          option.disabled = isSubmitted;
+          routeSelect.appendChild(option);
+        });
+
+        if (selectedClimber === '') {
+          summaryBox.textContent = '';
+        } else if (submittedRoutes.length === 0) {
+          summaryBox.textContent = 'No routes submitted yet.';
+        } else {
+          summaryBox.textContent = `Already submitted: ${submittedRoutes.join(', ')}`;
+        }
+      }
+
+      climberSelect.addEventListener('change', updateRouteOptions);
+      updateRouteOptions(); // initial call
+    } catch (err) {
+      document.getElementById('error').textContent = 'Error loading form: ' + err.message;
+      console.error(err);
+    }
+  }
+</script>
+
+</body>
+</html>
+      

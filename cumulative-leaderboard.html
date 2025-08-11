@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <script src="/socket.io/socket.io.js"></script>
+  <meta charset="UTF-8" />
+  <title>Cumulative Leaderboard</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+    th { background-color: #f2f2f2; }
+
+    #updateBanner {
+      background-color: #dff0d8;
+      color: #3c763d;
+      padding: 10px;
+      margin-bottom: 10px;
+      border: 1px solid #d6e9c6;
+      border-radius: 4px;
+      text-align: center;
+      font-weight: bold;
+      animation: fadeOut 2s ease-in-out forwards;
+    }
+
+    @keyframes fadeOut {
+      0%   { opacity: 1; }
+      100% { opacity: 0; display: none; }
+    }
+
+    .highlighted {
+      background-color: #ffffcc;
+      transition: background-color 0.5s ease;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Cumulative Leaderboard</h1>
+
+  <!-- ✅ Live Update Banner -->
+  <div id="updateBanner" style="display: none;">🔄 Leaderboard updated!</div>
+
+  <table id="leaderboard">
+    <thead>
+      <tr>
+        <th>Climber</th>
+        <th>Total Tops</th>
+        <th>Total Bonus</th>
+        <th>Attempts to Tops</th>
+        <th>Attempts to Bonus</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+<script>
+  const socket = io();
+  let previousStats = {};
+  let lastUpdatedClimber = null;
+
+  socket.on('newResult', (data) => {
+    console.log('New result received:', data);
+    updateLeaderboard();
+  });
+
+  function showUpdateBanner() {
+    const banner = document.getElementById('updateBanner');
+    banner.style.display = 'block';
+    banner.style.opacity = '1';
+    setTimeout(() => {
+      banner.style.opacity = '0';
+    }, 2000);
+  }
+
+  function hasChanged(prev, curr) {
+    return (
+      prev.tops !== curr.tops ||
+      prev.bonuses !== curr.bonuses ||
+      prev.attemptsToTop !== curr.attemptsToTop ||
+      prev.attemptsToBonus !== curr.attemptsToBonus
+    );
+  }
+
+  async function updateLeaderboard() {
+    try {
+      const res = await fetch('/results.json');
+      const results = await res.json();
+
+      const climberStats = {};
+
+      results.forEach(r => {
+        const name = r.Climber;
+        if (!climberStats[name]) {
+          climberStats[name] = {
+            tops: 0,
+            bonuses: 0,
+            attemptsToTop: 0,
+            attemptsToBonus: 0
+          };
+        }
+
+        if (r.TopAchieved === 'true') {
+          climberStats[name].tops += 1;
+          climberStats[name].attemptsToTop += parseInt(r.FirstTopAttempt || r.TotalAttempts || 0, 10);
+        }
+
+        if (r.BonusAchieved === 'true') {
+          climberStats[name].bonuses += 1;
+          climberStats[name].attemptsToBonus += parseInt(r.FirstBonusAttempt || r.TotalAttempts || 0, 10);
+        }
+      });
+
+      const sorted = Object.entries(climberStats).sort(([, a], [, b]) => {
+        if (b.tops !== a.tops) return b.tops - a.tops;
+        if (b.bonuses !== a.bonuses) return b.bonuses - a.bonuses;
+        if (a.attemptsToTop !== b.attemptsToTop) return a.attemptsToTop - b.attemptsToTop;
+        return a.attemptsToBonus - b.attemptsToBonus;
+      });
+
+      const tbody = document.querySelector('#leaderboard tbody');
+      tbody.innerHTML = '';
+
+      sorted.forEach(([name, stats]) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${name}</td>
+          <td>${stats.tops}</td>
+          <td>${stats.bonuses}</td>
+          <td>${stats.attemptsToTop}</td>
+          <td>${stats.attemptsToBonus}</td>
+        `;
+
+        // Detect change and update tracker
+        if (!previousStats[name] || hasChanged(previousStats[name], stats)) {
+          lastUpdatedClimber = name;
+        }
+
+        // Apply persistent highlight only to the updated climber
+        if (name === lastUpdatedClimber) {
+          row.classList.add('highlighted');
+        }
+
+        tbody.appendChild(row);
+      });
+
+      previousStats = climberStats;
+      showUpdateBanner();
+    } catch (err) {
+      console.error('Error loading leaderboard:', err);
+    }
+  }
+
+  updateLeaderboard();
+</script>
+
+</body>
+</html>
