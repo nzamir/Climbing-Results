@@ -36,13 +36,13 @@ app.post('/submit', (req, res) => {
     return res.status(400).send('Missing or invalid fields');
   }
 
-  let bonusAchieved = false;
+  let zoneAchieved = false;
   for (let i = 0; i < attempts.length; i++) {
     const a = attempts[i];
-    if (a.top && !a.bonus && !bonusAchieved) {
-      return res.status(400).send(`Invalid attempt sequence: Top achieved on attempt ${a.number} before any bonus was recorded.`);
+    if (a.top && !a.zone && !zoneAchieved) {
+      return res.status(400).send(`Invalid attempt sequence: Top achieved on attempt ${a.number} before any zone was recorded.`);
     }
-    if (a.bonus) bonusAchieved = true;
+    if (a.zone) zoneAchieved = true;
   }
 
   const resultPath = path.join(__dirname, 'result.csv');
@@ -63,12 +63,12 @@ app.post('/submit', (req, res) => {
   }
 
   const totalAttempts = attempts.length;
-  const bonusAchievedFlag = attempts.some(a => a.bonus);
+  const zoneAchievedFlag = attempts.some(a => a.zone);
   const topAchievedFlag = attempts.some(a => a.top);
-  const firstBonusAttempt = attempts.findIndex(a => a.bonus) + 1 || '';
+  const firstZoneAttempt = attempts.findIndex(a => a.zone) + 1 || '';
   const firstTopAttempt = attempts.findIndex(a => a.top) + 1 || '';
 
-  const line = `${new Date().toISOString()},${climber},${route},${totalAttempts},${bonusAchievedFlag},${topAchievedFlag},${firstBonusAttempt},${firstTopAttempt}\n`;
+  const line = `${new Date().toISOString()},${climber},${route},${totalAttempts},${zoneAchievedFlag},${topAchievedFlag},${firstBonusAttempt},${firstTopAttempt}\n`;
   fs.appendFile(resultPath, line, (err) => {
     if (err) {
       console.error('Error writing result.csv', err);
@@ -79,9 +79,9 @@ app.post('/submit', (req, res) => {
       climber,
       route,
       totalAttempts,
-      bonusAchieved: bonusAchievedFlag,
+      zoneAchieved: zoneAchievedFlag,
       topAchieved: topAchievedFlag,
-      firstBonusAttempt,
+      firstZoneAttempt,
       firstTopAttempt,
       attempts
     });
@@ -173,5 +173,5 @@ io.on('connection', socket => {
 // ✅ Start the server
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}`);
+  console.log(`Server running at ${PORT}`);  // http://localhost:${PORT}`);
 });
