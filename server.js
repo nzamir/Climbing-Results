@@ -59,7 +59,7 @@ app.post('/submit', (req, res) => {
       return res.status(400).json({ error: 'Result already submitted for this climber and route.' });
     }
   } else {
-    fs.writeFileSync(resultPath, 'Timestamp,Climber,Route,TotalAttempts,BonusAchieved,TopAchieved,FirstBonusAttempt,FirstTopAttempt\n');
+    fs.writeFileSync(resultPath, 'Timestamp,Climber,Route,TotalAttempts,ZonesAchieved,TopAchieved,FirstZoneAttempt,FirstTopAttempt\n');
   }
 
   const totalAttempts = attempts.length;
@@ -68,7 +68,7 @@ app.post('/submit', (req, res) => {
   const firstZoneAttempt = attempts.findIndex(a => a.zone) + 1 || '';
   const firstTopAttempt = attempts.findIndex(a => a.top) + 1 || '';
 
-  const line = `${new Date().toISOString()},${climber},${route},${totalAttempts},${zoneAchievedFlag},${topAchievedFlag},${firstBonusAttempt},${firstTopAttempt}\n`;
+  const line = `${new Date().toISOString()},${climber},${route},${totalAttempts},${zoneAchievedFlag},${topAchievedFlag},${firstZoneAttempt},${firstTopAttempt}\n`;
   fs.appendFile(resultPath, line, (err) => {
     if (err) {
       console.error('Error writing result.csv', err);
@@ -174,4 +174,25 @@ io.on('connection', socket => {
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Server running at ${PORT}`);  // http://localhost:${PORT}`);
+});
+
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+
+// Set up multer to store uploaded file as climbers.csv
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, __dirname); // Save in root directory
+  },
+  filename: (req, file, cb) => {
+    cb(null, 'climbers.csv'); // Overwrite existing file
+  }
+});
+
+const upload = multer({ storage });
+
+app.post('/upload-climbers', upload.single('csvFile'), (req, res) => {
+  console.log('Climber list updated via upload.');
+  res.send('Climber list updated successfully!');
 });

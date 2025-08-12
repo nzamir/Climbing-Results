@@ -47,6 +47,13 @@
     <button type="submit">Submit</button>
   </form>
 
+
+  <form action="/upload-climbers" method="POST" enctype="multipart/form-data">
+  <label for="csvFile">Upload new climbers.csv:</label>
+  <input type="file" name="csvFile" accept=".csv" required />
+  <button type="submit">Upload</button>
+</form>
+
 <script>
   let attempts = [];
 
@@ -56,7 +63,7 @@
 
   document.getElementById('addAttempt').addEventListener('click', () => {
     const attemptNum = attempts.length + 1;
-    const attempt = { number: attemptNum, bonus: false, top: false };
+    const attempt = { number: attemptNum, zone: false, top: false };
     attempts.push(attempt);
     renderAttempts();
   });
@@ -70,8 +77,8 @@
       div.className = 'attempt-box';
       div.innerHTML = `
         <strong>Attempt ${a.number}</strong>
-        <button type="button" onclick="toggleBonus(${index})">
-          ${a.bonus ? 'Bonus ✅' : 'Bonus ❌'}
+        <button type="button" onclick="toggleZone(${index})">
+          ${a.zone ? 'Zone ✅' : 'Zone ❌'}
         </button>
         <button type="button" onclick="toggleTop(${index})">
           ${a.top ? 'Top ✅' : 'Top ❌'}
@@ -81,8 +88,8 @@
     });
   }
 
-  function toggleBonus(index) {
-    attempts[index].bonus = !attempts[index].bonus;
+  function toggleZone(index) {
+    attempts[index].zone = !attempts[index].zone;
     renderAttempts();
   }
 
@@ -103,14 +110,14 @@
       return;
     }
 
-    let bonusAchieved = false;
+    let zoneAchieved = false;
     for (let i = 0; i < attempts.length; i++) {
       const a = attempts[i];
-      if (a.top && !a.bonus && !bonusAchieved) {
-        alert(`Invalid result: Top achieved on attempt ${a.number} before any bonus was recorded.`);
+      if (a.top && !a.zone && !zoneAchieved) {
+        alert(`Invalid result: Top achieved on attempt ${a.number} before any zone was recorded.`);
         return;
       }
-      if (a.bonus) bonusAchieved = true;
+      if (a.zone) zoneAchieved = true;
     }
 
     const data = { climber, route, attempts };
