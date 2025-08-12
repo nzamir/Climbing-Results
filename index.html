@@ -86,7 +86,7 @@
       div.innerHTML = `
         <strong>Attempt ${a.number}</strong>
         <button type="button" onclick="toggleZone(${index})">
-          ${a.zones ? 'Zone ✅' : 'Zone ❌'}
+          ${a.zone ? 'Zone ✅' : 'Zone ❌'}
         </button>
         <button type="button" onclick="toggleTop(${index})">
           ${a.top ? 'Top ✅' : 'Top ❌'}
@@ -125,7 +125,7 @@
         alert(`Invalid result: Top achieved on attempt ${a.number} before any zone was recorded.`);
         return;
       }
-      if (a.zones) zoneAchieved = true;
+      if (a.zone) zoneAchieved = true;
     }
 
     const data = { climber, route, attempts };
