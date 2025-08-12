@@ -177,7 +177,6 @@ server.listen(PORT, () => {
 });
 
 const multer = require('multer');
-const path = require('path');
 const fs = require('fs');
 
 // Set up multer to store uploaded file as climbers.csv
@@ -193,6 +192,19 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 app.post('/upload-climbers', upload.single('csvFile'), (req, res) => {
-  console.log('Climber list updated via upload.');
-  res.send('Climber list updated successfully!');
+  const climbers = [];
+
+  fs.createReadStream(path.join(__dirname, 'climbers.csv'))
+    .pipe(require('csv-parser')())
+    .on('data', (row) => climbers.push(row))
+    .on('end', () => {
+      console.log(`Climber list updated via upload. ${climbers.length} climbers loaded.`);
+      res.send(`Climber list updated and reloaded! ${climbers.length} climbers loaded.`);
+    })
+    .on('error', (err) => {
+      console.error('Error reading uploaded climbers.csv:', err);
+      res.status(500).send('Failed to reload climber list.');
+    });
 });
+
+

@@ -20,7 +20,7 @@
     <th>Climber</th>
     <th>Route</th>
     <th>Top</th>
-    <th>Bonus</th>
+    <th>Zone</th>
     <th>Attempts</th>
     </tr>
     </thead>
@@ -36,13 +36,13 @@
       return data.sort((a, b) => {
         const topA = parseInt(a.Top, 10);
         const topB = parseInt(b.Top, 10);
-        const bonusA = parseInt(a.Bonus, 10);
-        const bonusB = parseInt(b.Bonus, 10);
+        const zoneA = parseInt(a.Zone, 10);
+        const zoneB = parseInt(b.Zone, 10);
         const attemptsA = parseInt(a.Attempts, 10);
         const attemptsB = parseInt(b.Attempts, 10);
 
         if (topB !== topA) return topB - topA;
-        if (bonusB !== bonusA) return bonusB - bonusA;
+        if (zoneB !== zoneA) return zoneB - zoneA;
         return attemptsA - attemptsB;
       });
     }
@@ -60,7 +60,7 @@
           <td>${entry.Climber}</td>
           <td>${entry.Route}</td>
           <td>${entry.Top}</td>
-          <td>${entry.Bonus}</td>
+          <td>${entry.Zone}</td>
           <td>${entry.Attempts}</td>
         `;
         tbody.appendChild(row);
