@@ -75,7 +75,7 @@
   function hasChanged(prev, curr) {
     return (
       prev.tops !== curr.tops ||
-      prev.zones !== curr.zones ||
+      prev.zone !== curr.zone ||
       prev.attemptsToTop !== curr.attemptsToTop ||
       prev.attemptsToZone !== curr.attemptsToZone
     );
@@ -100,7 +100,7 @@
   if (!climberStats[name]) {
     climberStats[name] = {
       tops: 0,
-      zones: 0,
+      zone: 0,
       attemptsToTop: 0,
       attemptsToZone: 0
     };
@@ -112,14 +112,14 @@
   }
 
   if (r.ZoneAchieved === 'true') {
-    climberStats[name].zones += 1;
+    climberStats[name].zone += 1;
     climberStats[name].attemptsToZone += parseInt(r.FirstZoneAttempt || r.TotalAttempts || 0, 10);
   }
 });
 
       const sorted = Object.entries(climberStats).sort(([, a], [, b]) => {
         if (b.tops !== a.tops) return b.tops - a.tops;
-        if (b.zones !== a.zones) return b.zones - a.zones;
+        if (b.zone !== a.zone) return b.zone - a.zone;
         if (a.attemptsToTop !== b.attemptsToTop) return a.attemptsToTop - b.attemptsToTop;
         return a.attemptsToZone - b.attemptsToZone;
       });
@@ -132,7 +132,7 @@
         row.innerHTML = `
           <td>${name}</td>
           <td>${stats.tops}</td>
-          <td>${stats.zones}</td>
+          <td>${stats.zone}</td>
           <td>${stats.attemptsToTop}</td>
           <td>${stats.attemptsToZone}</td>
         `;
