@@ -1,2 +1,2 @@
-Timestamp,Climber,Route,TotalAttempts,ZonesAchieved,TopAchieved,FirstZoneAttempt,FirstTopAttempt
+Timestamp,Climber,Route,TotalAttempts,HasZone,HasTop,ZoneOnAttempt,TopOnAttempt
 
