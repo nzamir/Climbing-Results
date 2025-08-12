@@ -37,14 +37,16 @@ app.post('/submit', (req, res) => {
     return res.status(400).send('Missing or invalid fields');
   }
 
-  let zoneAchieved = false;
-  for (let i = 0; i < attempts.length; i++) {
-    const a = attempts[i];
-    if (a.top && !a.zone && !zoneAchieved) {
-      return res.status(400).send(`Invalid attempt sequence: Top achieved on attempt ${a.number} before any zone was recorded.`);
-    }
-    if (a.zone) zoneAchieved = true;
+let zoneAchieved = false;
+for (let i = 0; i < attempts.length; i++) {
+  const a = attempts[i];
+
+  if (a.zone) zoneAchieved = true;
+
+  if (a.top && !a.zone && !zoneAchieved) {
+    return res.status(400).send(`Invalid attempt sequence: Top achieved on attempt ${a.number} before any zone was recorded.`);
   }
+}
 
   const resultPath = path.join(__dirname, 'result.csv');
 
