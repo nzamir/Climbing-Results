@@ -177,9 +177,6 @@ server.listen(PORT, () => {
   console.log(`Server running at ${PORT}`);  // http://localhost:${PORT}`);
 });
 
-const multer = require('multer');
-const fs = require('fs');
-
 // Set up multer to store uploaded file as climbers.csv
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
