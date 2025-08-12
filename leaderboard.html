@@ -1,65 +1,31 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8" />
-  <title>Leaderboard</title>
-  <style>
-    body { font-family: Arial, sans-serif; padding: 20px; }
-    table { border-collapse: collapse; width: 100%; margin-top: 20px; }
-    th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
-    th { background-color: #f2f2f2; }
-    .highlight { background-color: #dff0d8; }
-  </style>
-</head>
-<body>
+<script>
+  async function loadLeaderboard() {
+    try {
+      const res = await fetch('/results.json');
+      const results = await res.json();
 
-  <h1>Climbing Raw Entry</h1>
-  <table id="leaderboard">
-    <thead>
-      <tr>
-        <th>Climber</th>
-        <th>Route</th>
-        <th>Total Attempts</th>
-        <th>Zones Achieved</th>
-        <th>Top Achieved</th>
-        <th>First Zone Attempt</th>
-        <th>First Top Attempt</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
+      const tbody = document.querySelector('#leaderboard tbody');
+      tbody.innerHTML = '';
 
-  <script>
-    async function loadLeaderboard() {
-      try {
-        const res = await fetch('/results.json');
-        const results = await res.json();
+      results.forEach(r => {
+        const row = document.createElement('tr');
+        if (r.HasTop === 'true') row.classList.add('highlight');
 
-        const tbody = document.querySelector('#leaderboard tbody');
-        tbody.innerHTML = '';
-
-        results.forEach(r => {
-          const row = document.createElement('tr');
-          if (r.TopAchieved === 'true') row.classList.add('highlight');
-
-          row.innerHTML = `
-            <td>${r.Climber}</td>
-            <td>${r.Route}</td>
-            <td>${r.TotalAttempts}</td>
-            <td>${r.ZoneAchieved === 'true' ? '✅' : '❌'}</td>
-            <td>${r.TopAchieved === 'true' ? '✅' : '❌'}</td>
-            <td>${r.FirstZoneAttempt || '-'}</td>
-            <td>${r.FirstTopAttempt || '-'}</td>
-          `;
-          tbody.appendChild(row);
-        });
-      } catch (err) {
-        console.error('Error loading leaderboard:', err);
-      }
+        row.innerHTML = `
+          <td>${r.Climber}</td>
+          <td>${r.Route}</td>
+          <td>${r.TotalAttempts}</td>
+          <td>${r.HasZone === 'true' ? '✅' : '❌'}</td>
+          <td>${r.HasTop === 'true' ? '✅' : '❌'}</td>
+          <td>${r.ZoneOnAttempt || '-'}</td>
+          <td>${r.TopOnAttempt || '-'}</td>
+        `;
+        tbody.appendChild(row);
+      });
+    } catch (err) {
+      console.error('Error loading leaderboard:', err);
     }
+  }
 
-    loadLeaderboard();
-  </script>
-
-</body>
-</html>
+  loadLeaderboard();
+</script>
