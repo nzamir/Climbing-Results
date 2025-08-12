@@ -119,7 +119,7 @@
 
       const sorted = Object.entries(climberStats).sort(([, a], [, b]) => {
         if (b.tops !== a.tops) return b.tops - a.tops;
-        if (b.zones !== a.zones) return b.zones - a.zones;
+        if (b.zone !== a.zone) return b.zone - a.zone;
         if (a.attemptsToTop !== b.attemptsToTop) return a.attemptsToTop - b.attemptsToTop;
         return a.attemptsToZone - b.attemptsToZone;
       });
