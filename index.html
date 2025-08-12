@@ -47,21 +47,6 @@
     <button type="submit">Submit</button>
   </form>
 
-
-<script>
-  document.getElementById('uploadForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const formData = new FormData(e.target);
-    const res = await fetch('/upload-climbers', {
-      method: 'POST',
-      body: formData
-    });
-    const text = await res.text();
-    document.getElementById('uploadStatus').textContent = text;
-  });
-</script>
-
-
 <script>
   let attempts = [];
 
@@ -118,14 +103,15 @@
       return;
     }
 
-    let zoneAchieved = false;
+    // ✅ Validation logic using hasZone for clarity
+    let hasZone = false;
     for (let i = 0; i < attempts.length; i++) {
       const a = attempts[i];
-      if (a.top && !a.zones && !zoneAchieved) {
+      if (a.top && !a.zone && !hasZone) {
         alert(`Invalid result: Top achieved on attempt ${a.number} before any zone was recorded.`);
         return;
       }
-      if (a.zone) zoneAchieved = true;
+      if (a.zone) hasZone = true;
     }
 
     const data = { climber, route, attempts };
@@ -211,4 +197,3 @@
 
 </body>
 </html>
-      

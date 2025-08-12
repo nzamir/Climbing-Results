@@ -11,11 +11,11 @@ const server = http.createServer(app);
 const io = socketIo(server, { cors: { origin: '*' } });
 
 app.use(express.json());
-app.use(express.static(__dirname)); // Serve static files
+app.use(express.static(__dirname));
 
 const routes = ["Route 1", "Route 2", "Route 3", "Route 4", "Route 5", "Route 6"];
 
-// ✅ Serve climbers from CSV and routes from array
+// ✅ Serve climbers and routes
 app.get('/data', (req, res) => {
   try {
     const csvPath = path.join(__dirname, 'climbers.csv');
@@ -37,16 +37,16 @@ app.post('/submit', (req, res) => {
     return res.status(400).send('Missing or invalid fields');
   }
 
-let zoneAchieved = false;
-for (let i = 0; i < attempts.length; i++) {
-  const a = attempts[i];
+  let zoneAchieved = false;
+  for (let i = 0; i < attempts.length; i++) {
+    const a = attempts[i];
 
-  if (a.zone) zoneAchieved = true;
+    if (a.zone) zoneAchieved = true;
 
-  if (a.top && !a.zone && !zoneAchieved) {
-    return res.status(400).send(`Invalid attempt sequence: Top achieved on attempt ${a.number} before any zone was recorded.`);
+    if (a.top && !a.zone && !zoneAchieved) {
+      return res.status(400).send(`Invalid attempt sequence: Top achieved on attempt ${a.number} before any zone was recorded.`);
+    }
   }
-}
 
   const resultPath = path.join(__dirname, 'result.csv');
 
@@ -62,16 +62,16 @@ for (let i = 0; i < attempts.length; i++) {
       return res.status(400).json({ error: 'Result already submitted for this climber and route.' });
     }
   } else {
-    fs.writeFileSync(resultPath, 'Timestamp,Climber,Route,TotalAttempts,ZonesAchieved,TopAchieved,FirstZoneAttempt,FirstTopAttempt\n');
+    fs.writeFileSync(resultPath, 'Timestamp,Climber,Route,TotalAttempts,HasZone,HasTop,ZoneOnAttempt,TopOnAttempt\n');
   }
 
   const totalAttempts = attempts.length;
-  const zoneAchievedFlag = attempts.some(a => a.zone);
-  const topAchievedFlag = attempts.some(a => a.top);
-  const firstZoneAttempt = attempts.findIndex(a => a.zone) + 1 || '';
-  const firstTopAttempt = attempts.findIndex(a => a.top) + 1 || '';
+  const hasZone = attempts.some(a => a.zone);
+  const hasTop = attempts.some(a => a.top);
+  const zoneOnAttempt = attempts.findIndex(a => a.zone) + 1 || '';
+  const topOnAttempt = attempts.findIndex(a => a.top) + 1 || '';
 
-  const line = `${new Date().toISOString()},${climber},${route},${totalAttempts},${zoneAchievedFlag},${topAchievedFlag},${firstZoneAttempt},${firstTopAttempt}\n`;
+  const line = `${new Date().toISOString()},${climber},${route},${totalAttempts},${hasZone},${hasTop},${zoneOnAttempt},${topOnAttempt}\n`;
   fs.appendFile(resultPath, line, (err) => {
     if (err) {
       console.error('Error writing result.csv', err);
@@ -82,10 +82,10 @@ for (let i = 0; i < attempts.length; i++) {
       climber,
       route,
       totalAttempts,
-      zoneAchieved: zoneAchievedFlag,
-      topAchieved: topAchievedFlag,
-      firstZoneAttempt,
-      firstTopAttempt,
+      hasZone,
+      hasTop,
+      zoneOnAttempt,
+      topOnAttempt,
       attempts
     });
 
@@ -93,7 +93,7 @@ for (let i = 0; i < attempts.length; i++) {
   });
 });
 
-// ✅ Serve leaderboard results
+// ✅ Serve full results
 app.get('/results.json', (req, res) => {
   try {
     const resultPath = path.join(__dirname, 'result.csv');
@@ -106,34 +106,23 @@ app.get('/results.json', (req, res) => {
   }
 });
 
+// ✅ Serve summary of submissions
 app.get('/summary.json', (req, res) => {
   try {
     const resultPath = path.join(__dirname, 'result.csv');
+    if (!fs.existsSync(resultPath)) return res.json([]);
 
-    // If the result file doesn't exist yet, return an empty summary
-    if (!fs.existsSync(resultPath)) {
-      return res.json([]);
-    }
-
-    // Read and parse the result CSV
     const fileContent = fs.readFileSync(resultPath, 'utf8');
     const records = csvParse.parse(fileContent, { columns: true, skip_empty_lines: true });
 
-    // Build a summary object: { climberName: [route1, route2, ...] }
     const summary = {};
-
     records.forEach(record => {
       const climber = record.Climber;
       const route = record.Route;
-
-      if (!summary[climber]) {
-        summary[climber] = [];
-      }
-
+      if (!summary[climber]) summary[climber] = [];
       summary[climber].push(route);
     });
 
-    // Convert to array format for frontend use
     const summaryArray = Object.entries(summary).map(([climber, routes]) => ({
       climber,
       routes,
@@ -147,6 +136,7 @@ app.get('/summary.json', (req, res) => {
   }
 });
 
+// ✅ Serve submitted climber-route pairs
 app.get('/submitted.json', (req, res) => {
   try {
     const resultPath = path.join(__dirname, 'result.csv');
@@ -167,7 +157,6 @@ app.get('/submitted.json', (req, res) => {
   }
 });
 
-
 // ✅ Handle client connections
 io.on('connection', socket => {
   console.log('Client connected');
@@ -176,17 +165,13 @@ io.on('connection', socket => {
 // ✅ Start the server
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-  console.log(`Server running at ${PORT}`);  // http://localhost:${PORT}`);
+  console.log(`Server running at ${PORT}`);
 });
 
-// Set up multer to store uploaded file as climbers.csv
+// ✅ Handle climber CSV uploads
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, __dirname); // Save in root directory
-  },
-  filename: (req, file, cb) => {
-    cb(null, 'climbers.csv'); // Overwrite existing file
-  }
+  destination: (req, file, cb) => cb(null, __dirname),
+  filename: (req, file, cb) => cb(null, 'climbers.csv')
 });
 
 const upload = multer({ storage });
@@ -196,15 +181,13 @@ app.post('/upload-climbers', upload.single('csvFile'), (req, res) => {
 
   fs.createReadStream(path.join(__dirname, 'climbers.csv'))
     .pipe(require('csv-parser')())
-    .on('data', (row) => climbers.push(row))
+    .on('data', row => climbers.push(row))
     .on('end', () => {
       console.log(`Climber list updated via upload. ${climbers.length} climbers loaded.`);
       res.send(`Climber list updated and reloaded! ${climbers.length} climbers loaded.`);
     })
-    .on('error', (err) => {
+    .on('error', err => {
       console.error('Error reading uploaded climbers.csv:', err);
       res.status(500).send('Failed to reload climber list.');
     });
 });
-
-

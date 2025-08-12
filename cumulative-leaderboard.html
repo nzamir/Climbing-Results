@@ -37,7 +37,6 @@
 
   <h1>Cumulative Leaderboard</h1>
 
-  <!-- ✅ Live Update Banner -->
   <div id="updateBanner" style="display: none;">🔄 Leaderboard updated!</div>
 
   <table id="leaderboard">
@@ -74,8 +73,8 @@
 
   function hasChanged(prev, curr) {
     return (
-      prev.tops !== curr.tops ||
-      prev.zones !== curr.zones ||
+      prev.topCount !== curr.topCount ||
+      prev.zoneCount !== curr.zoneCount ||
       prev.attemptsToTop !== curr.attemptsToTop ||
       prev.attemptsToZone !== curr.attemptsToZone
     );
@@ -90,59 +89,56 @@
       const seenRoutes = new Set();
 
       results.forEach(r => {
-  const name = r.Climber;
-  const routeKey = `${name}-${r.Route}`;
+        const name = r.Climber;
+        const routeKey = `${name}-${r.Route}`;
 
-  // ✅ Skip duplicate submissions for same climber and route
-  if (seenRoutes.has(routeKey)) return;
-  seenRoutes.add(routeKey);
+        if (seenRoutes.has(routeKey)) return;
+        seenRoutes.add(routeKey);
 
-  if (!climberStats[name]) {
-    climberStats[name] = {
-      tops: 0,
-      zones: 0,
-      attemptsToTop: 0,
-      attemptsToZone: 0
-    };
-  }
+        if (!climberStats[name]) {
+          climberStats[name] = {
+            topCount: 0,
+            zoneCount: 0,
+            attemptsToTop: 0,
+            attemptsToZone: 0
+          };
+        }
 
-  if (r.TopAchieved === 'true') {
-    climberStats[name].tops += 1;
-    climberStats[name].attemptsToTop += parseInt(r.FirstTopAttempt || r.TotalAttempts || 0, 10);
-  }
+        if (r.HasTop === 'true') {
+          climberStats[name].topCount += 1;
+          climberStats[name].attemptsToTop += parseInt(r.TopOnAttempt || r.TotalAttempts || 0, 10);
+        }
 
-  if (r.ZoneAchieved === 'true') {
-    climberStats[name].zones += 1;
-    climberStats[name].attemptsToZone += parseInt(r.FirstZoneAttempt || r.TotalAttempts || 0, 10);
-  }
-});
+        if (r.HasZone === 'true') {
+          climberStats[name].zoneCount += 1;
+          climberStats[name].attemptsToZone += parseInt(r.ZoneOnAttempt || r.TotalAttempts || 0, 10);
+        }
+      });
 
       const sorted = Object.entries(climberStats).sort(([, a], [, b]) => {
-        if (b.tops !== a.tops) return b.tops - a.tops;
-        if (b.zone !== a.zone) return b.zone - a.zone;
+        if (b.topCount !== a.topCount) return b.topCount - a.topCount;
+        if (b.zoneCount !== a.zoneCount) return b.zoneCount - a.zoneCount;
         if (a.attemptsToTop !== b.attemptsToTop) return a.attemptsToTop - b.attemptsToTop;
         return a.attemptsToZone - b.attemptsToZone;
       });
 
       const tbody = document.querySelector('#leaderboard tbody');
       tbody.innerHTML = '';
-      // retrieving the data
+
       sorted.forEach(([name, stats]) => {
         const row = document.createElement('tr');
         row.innerHTML = `
           <td>${name}</td>
-          <td>${stats.tops}</td>
-          <td>${stats.zones}</td>
+          <td>${stats.topCount}</td>
+          <td>${stats.zoneCount}</td>
           <td>${stats.attemptsToTop}</td>
           <td>${stats.attemptsToZone}</td>
         `;
 
-        // Detect change and update tracker
         if (!previousStats[name] || hasChanged(previousStats[name], stats)) {
           lastUpdatedClimber = name;
         }
 
-        // Apply persistent highlight only to the updated climber
         if (name === lastUpdatedClimber) {
           row.classList.add('highlighted');
         }
