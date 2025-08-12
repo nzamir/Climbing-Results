@@ -4,10 +4,34 @@
       const res = await fetch('/results.json');
       const results = await res.json();
 
+      // ✅ Optional: define expected climbers and routes
+      const climbers = ['Noor', 'Alex', 'Jamie']; // Replace with actual list
+      const routes = ['Route 1', 'Route 2', 'Route 3']; // Replace with actual list
+
+      // ✅ Group by Climber + Route, keeping earliest submission
+      const grouped = {};
+      results.forEach(r => {
+        const key = `${r.Climber}-${r.Route}`;
+        if (!grouped[key]) {
+          grouped[key] = r;
+        } else {
+          const existing = grouped[key];
+          const timeA = new Date(r.Timestamp || 0);
+          const timeB = new Date(existing.Timestamp || 0);
+          if (timeA < timeB) grouped[key] = r; // Keep earliest
+        }
+      });
+
+      // ✅ Sort by timestamp
+      const sorted = Object.values(grouped).sort((a, b) => {
+        return new Date(a.Timestamp || 0) - new Date(b.Timestamp || 0);
+      });
+
+      // ✅ Render leaderboard
       const tbody = document.querySelector('#leaderboard tbody');
       tbody.innerHTML = '';
 
-      results.forEach(r => {
+      sorted.forEach(r => {
         const row = document.createElement('tr');
         if (r.HasTop === 'true') row.classList.add('highlight');
 
@@ -19,9 +43,21 @@
           <td>${r.HasTop === 'true' ? '✅' : '❌'}</td>
           <td>${r.ZoneOnAttempt || '-'}</td>
           <td>${r.TopOnAttempt || '-'}</td>
+          <td>${r.Timestamp ? new Date(r.Timestamp).toLocaleString() : '-'}</td>
         `;
         tbody.appendChild(row);
       });
+
+      // ✅ Optional: check for missing submissions
+      const expectedCombos = new Set();
+      climbers.forEach(c => routes.forEach(r => expectedCombos.add(`${c}-${r}`)));
+
+      const submittedCombos = new Set(Object.keys(grouped));
+      const missing = [...expectedCombos].filter(k => !submittedCombos.has(k));
+      if (missing.length > 0) {
+        console.warn('Missing submissions:', missing);
+      }
+
     } catch (err) {
       console.error('Error loading leaderboard:', err);
     }
