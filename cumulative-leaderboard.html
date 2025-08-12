@@ -45,9 +45,9 @@
       <tr>
         <th>Climber</th>
         <th>Total Tops</th>
-        <th>Total Bonus</th>
+        <th>Total Zones</th>
         <th>Attempts to Tops</th>
-        <th>Attempts to Bonus</th>
+        <th>Attempts to Zones</th>
       </tr>
     </thead>
     <tbody></tbody>
@@ -75,9 +75,9 @@
   function hasChanged(prev, curr) {
     return (
       prev.tops !== curr.tops ||
-      prev.bonuses !== curr.bonuses ||
+      prev.zones !== curr.zones ||
       prev.attemptsToTop !== curr.attemptsToTop ||
-      prev.attemptsToBonus !== curr.attemptsToBonus
+      prev.attemptsToZone !== curr.attemptsToZone
     );
   }
 
@@ -87,34 +87,41 @@
       const results = await res.json();
 
       const climberStats = {};
+      const seenRoutes = new Set();
 
       results.forEach(r => {
-        const name = r.Climber;
-        if (!climberStats[name]) {
-          climberStats[name] = {
-            tops: 0,
-            bonuses: 0,
-            attemptsToTop: 0,
-            attemptsToBonus: 0
-          };
-        }
+  const name = r.Climber;
+  const routeKey = `${name}-${r.Route}`;
 
-        if (r.TopAchieved === 'true') {
-          climberStats[name].tops += 1;
-          climberStats[name].attemptsToTop += parseInt(r.FirstTopAttempt || r.TotalAttempts || 0, 10);
-        }
+  // ✅ Skip duplicate submissions for same climber and route
+  if (seenRoutes.has(routeKey)) return;
+  seenRoutes.add(routeKey);
 
-        if (r.BonusAchieved === 'true') {
-          climberStats[name].bonuses += 1;
-          climberStats[name].attemptsToBonus += parseInt(r.FirstBonusAttempt || r.TotalAttempts || 0, 10);
-        }
-      });
+  if (!climberStats[name]) {
+    climberStats[name] = {
+      tops: 0,
+      zonees: 0,
+      attemptsToTop: 0,
+      attemptsToZone: 0
+    };
+  }
+
+  if (r.TopAchieved === 'true') {
+    climberStats[name].tops += 1;
+    climberStats[name].attemptsToTop += parseInt(r.FirstTopAttempt || r.TotalAttempts || 0, 10);
+  }
+
+  if (r.ZoneAchieved === 'true') {
+    climberStats[name].zones += 1;
+    climberStats[name].attemptsToZone += parseInt(r.FirstZoneAttempt || r.TotalAttempts || 0, 10);
+  }
+});
 
       const sorted = Object.entries(climberStats).sort(([, a], [, b]) => {
         if (b.tops !== a.tops) return b.tops - a.tops;
-        if (b.bonuses !== a.bonuses) return b.bonuses - a.bonuses;
+        if (b.zones !== a.zones) return b.zones - a.zones;
         if (a.attemptsToTop !== b.attemptsToTop) return a.attemptsToTop - b.attemptsToTop;
-        return a.attemptsToBonus - b.attemptsToBonus;
+        return a.attemptsToZone - b.attemptsToZone;
       });
 
       const tbody = document.querySelector('#leaderboard tbody');
@@ -125,9 +132,9 @@
         row.innerHTML = `
           <td>${name}</td>
           <td>${stats.tops}</td>
-          <td>${stats.bonuses}</td>
+          <td>${stats.zones}</td>
           <td>${stats.attemptsToTop}</td>
-          <td>${stats.attemptsToBonus}</td>
+          <td>${stats.attemptsToZone}</td>
         `;
 
         // Detect change and update tracker
