@@ -40,10 +40,10 @@ app.post('/submit', (req, res) => {
   let zoneAchieved = false;
   for (let i = 0; i < attempts.length; i++) {
     const a = attempts[i];
-    if (a.top && !a.zones && !zoneAchieved) {
+    if (a.top && !a.zone && !zoneAchieved) {
       return res.status(400).send(`Invalid attempt sequence: Top achieved on attempt ${a.number} before any zone was recorded.`);
     }
-    if (a.zones) zoneAchieved = true;
+    if (a.zone) zoneAchieved = true;
   }
 
   const resultPath = path.join(__dirname, 'result.csv');
@@ -64,9 +64,9 @@ app.post('/submit', (req, res) => {
   }
 
   const totalAttempts = attempts.length;
-  const zoneAchievedFlag = attempts.some(a => a.zones);
+  const zoneAchievedFlag = attempts.some(a => a.zone);
   const topAchievedFlag = attempts.some(a => a.top);
-  const firstZoneAttempt = attempts.findIndex(a => a.zones) + 1 || '';
+  const firstZoneAttempt = attempts.findIndex(a => a.zone) + 1 || '';
   const firstTopAttempt = attempts.findIndex(a => a.top) + 1 || '';
 
   const line = `${new Date().toISOString()},${climber},${route},${totalAttempts},${zoneAchievedFlag},${topAchievedFlag},${firstZoneAttempt},${firstTopAttempt}\n`;
