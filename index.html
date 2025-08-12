@@ -48,12 +48,6 @@
   </form>
 
 
-<form id="uploadForm" action="/upload-climbers" method="POST" enctype="multipart/form-data">
-  <input type="file" name="csvFile" accept=".csv" required />
-  <button type="submit">Upload</button>
-</form>
-<div id="uploadStatus"></div>
-
 <script>
   document.getElementById('uploadForm').addEventListener('submit', async (e) => {
     e.preventDefault();
