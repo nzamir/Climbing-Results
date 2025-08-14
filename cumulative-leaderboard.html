@@ -160,7 +160,68 @@
     );
   }
 
-  async function updateLeaderboard() {
+async function updateLeaderboard() {
+  try {
+    const res = await fetch('/results.json');
+    const climberStats = await res.json(); // ✅ Already aggregated
+
+    const routeList = ['Route 1', 'Route 2', 'Route 3', 'Route 4', 'Route 5', 'Route 6'];
+
+    const sorted = Object.entries(climberStats).sort(([, a], [, b]) => {
+      if (b.topCount !== a.topCount) return b.topCount - a.topCount;
+      if (b.zoneCount !== a.zoneCount) return b.zoneCount - a.zoneCount;
+      if (a.attemptsToTop !== b.attemptsToTop) return a.attemptsToTop - b.attemptsToTop;
+      return a.attemptsToZone - b.attemptsToZone;
+    });
+
+    const tbody = document.querySelector('#leaderboard tbody');
+    tbody.innerHTML = '';
+
+    sorted.forEach(([name, stats]) => {
+      const row = document.createElement('tr');
+
+      const routeSummary = routeList.map(route => {
+        const status = stats.routeStatus?.[route] || 'none';
+        const zoneAttempt = stats.routeAttempts?.[route]?.zone || '';
+        const topAttempt = stats.routeAttempts?.[route]?.top || '';
+
+        let label = '';
+        if (status === 'top') label = `${zoneAttempt}AZ${topAttempt}AT`;
+        else if (status === 'zone') label = `${zoneAttempt}AZ0AT`;
+        else label = 'No score';
+
+        if (status === 'top') return `<span class="bar full" data-label="${label}"></span>`;
+        if (status === 'zone') return `<span class="bar half" data-label="${label}"></span>`;
+        return `<span class="bar empty" data-label="${label}"></span>`;
+      }).join('');
+
+      row.innerHTML = `
+        <td>${name}</td>
+        <td>${stats.topCount}</td>
+        <td>${stats.zoneCount}</td>
+        <td>${stats.attemptsToTop}</td>
+        <td>${stats.attemptsToZone}</td>
+        <td class="route-summary">${routeSummary}</td>
+      `;
+
+      if (!previousStats[name] || hasChanged(previousStats[name], stats)) {
+        lastUpdatedClimber = name;
+      }
+
+      if (name === lastUpdatedClimber) {
+        row.classList.add('highlighted');
+      }
+
+      tbody.appendChild(row);
+    });
+
+    previousStats = climberStats;
+    showUpdateBanner();
+  } catch (err) {
+    console.error('Error loading leaderboard:', err);
+  }
+}
+
     try {
       const res = await fetch('/results.json');
       const results = await res.json();
