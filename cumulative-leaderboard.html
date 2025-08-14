@@ -161,102 +161,114 @@
   }
 
   async function updateLeaderboard() {
-  try {
-    const res = await fetch('/results.json');
-    const results = await res.json();
+    try {
+      const res = await fetch('/results.json');
+      const results = await res.json();
 
-    const routeList = ['Route 1', 'Route 2', 'Route 3', 'Route 4', 'Route 5', 'Route 6'];
-    const climberStats = {};
-    const seenRoutes = new Set();
+      const routeList = ['Route 1', 'Route 2', 'Route 3', 'Route 4', 'Route 5', 'Route 6'];
+      const climberStats = {};
+      const seenRoutes = new Set();
 
-    results.forEach(r => {
-      const name = r.Climber;
-      const route = r.Route;
-      const key = `${name}-${route}`;
-      if (seenRoutes.has(key)) return;
-      seenRoutes.add(key);
+      results.forEach(r => {
+        const name = r.Climber;
+        const route = r.Route;
+        const key = `${name}-${route}`;
+        if (seenRoutes.has(key)) return;
+        seenRoutes.add(key;
 
-      if (!climberStats[name]) {
-        climberStats[name] = {
-          topCount: 0,
-          zoneCount: 0,
-          attemptsToTop: 0,
-          attemptsToZone: 0,
-          routeStatus: {} // ✅ Track per-route status
-        };
-      }
+        if (!climberStats[name]) {
+          climberStats[name] = {
+            topCount: 0,
+            zoneCount: 0,
+            attemptsToTop: 0,
+            attemptsToZone: 0,
+            routeStatus: {},
+            routeAttempts: {} // ✅ Added
+          };
+        }
 
-      const stats = climberStats[name];
+        const stats = climberStats[name];
 
-      if (r.HasTop === 'true') {
-        stats.topCount += 1;
-        stats.attemptsToTop += parseInt(r.TopOnAttempt || r.TotalAttempts || 0, 10);
-        stats.routeStatus[route] = 'top';
-      } else if (r.HasZone === 'true') {
-        stats.zoneCount += 1;
-        stats.attemptsToZone += parseInt(r.ZoneOnAttempt || r.TotalAttempts || 0, 10);
-        stats.routeStatus[route] = 'zone';
-      } else {
-        stats.routeStatus[route] = 'none';
-      }
-    });
+        if (!stats.routeAttempts[route]) {
+          stats.routeAttempts[route] = { zone: '', top: '' };
+        }
 
-    const sorted = Object.entries(climberStats).sort(([, a], [, b]) => {
-      if (b.topCount !== a.topCount) return b.topCount - a.topCount;
-      if (b.zoneCount !== a.zoneCount) return b.zoneCount - a.zoneCount;
-      if (a.attemptsToTop !== b.attemptsToTop) return a.attemptsToTop - b.attemptsToTop;
-      return a.attemptsToZone - b.attemptsToZone;
-    });
+        if (r.HasTop === 'true') {
+          const topAttempt = parseInt(r.TopOnAttempt || r.TotalAttempts || 0, 10);
+          const zoneAttempt = parseInt(r.ZoneOnAttempt || 0, 10);
+          stats.topCount += 1;
+          stats.attemptsToTop += topAttempt;
+          stats.routeStatus[route] = 'top';
+          stats.routeAttempts[route].top = topAttempt;
+          stats.routeAttempts[route].zone = zoneAttempt;
+        } else if (r.HasZone === 'true') {
+          const zoneAttempt = parseInt(r.ZoneOnAttempt || r.TotalAttempts || 0, 10);
+          stats.zoneCount += 1;
+          stats.attemptsToZone += zoneAttempt;
+          stats.routeStatus[route] = 'zone';
+          stats.routeAttempts[route].zone = zoneAttempt;
+        } else {
+          stats.routeStatus[route] = 'none';
+        }
+      });
 
-    const tbody = document.querySelector('#leaderboard tbody');
-    tbody.innerHTML = '';
+      const sorted = Object.entries(climberStats).sort(([, a], [, b]) => {
+        if (b.topCount !== a.topCount) return b.topCount - a.topCount;
+        if (b.zoneCount !== a.zoneCount) return b.zoneCount - a.zoneCount;
+        if (a.attemptsToTop !== b.attemptsToTop) return a.attemptsToTop - b.attemptsToTop;
+        return a.attemptsToZone - b.attemptsToZone;
+      });
 
-    sorted.forEach(([name, stats]) => {
-      const row = document.createElement('tr');
-      const routeSummary = routeList.map(route => {
-      const status = stats.routeStatus[route];
-      const zoneAttempt = stats.routeAttempts?.[route]?.zone || '';
-      const topAttempt = stats.routeAttempts?.[route]?.top || '';
+      const tbody = document.querySelector('#leaderboard tbody');
+      tbody.innerHTML = '';
 
-      let label = '';
-      if (status === 'top') label = `${zoneAttempt}AZ${topAttempt}AT`;
-      else if (status === 'zone') label = `${zoneAttempt}AZ0AT`;
-      else label = 'No score';
+      sorted.forEach(([name, stats]) => {
+        const row = document.createElement('tr');
+        const routeSummary = routeList.map(route => {
+          const status = stats.routeStatus[route];
+          const zoneAttempt = stats.routeAttempts?.[route]?.zone || '';
+          const topAttempt = stats.routeAttempts?.[route]?.top || '';
 
-      if (status === 'top') return `<span class="bar full" data-label="${label}"></span>`;
-      if (status === 'zone') return `<span class="bar half" data-label="${label}"></span>`;
-      return `<span class="bar empty" data-label="${label}"></span>`;
-    }).join('');
+          let label = '';
+          if (status === 'top') label = `${zoneAttempt}AZ${topAttempt}AT`;
+          else if (status === 'zone') label = `${zoneAttempt}AZ0AT`;
+          else label = 'No score';
 
-      row.innerHTML = `
-        <td>${name}</td>
-        <td>${stats.topCount}</td>
-        <td>${stats.zoneCount}</td>
-        <td>${stats.attemptsToTop}</td>
-        <td>${stats.attemptsToZone}</td>
-        <td class="route-summary">${routeSummary}</td>
-      `;
+          if (status === 'top') return `<span class="bar full" data-label="${label}"></span>`;
+          if (status === 'zone') return `<span class="bar half" data-label="${label}"></span>`;
+          return `<span class="bar empty" data-label="${label}"></span>`;
+        }).join('');
 
-      if (!previousStats[name] || hasChanged(previousStats[name], stats)) {
-        lastUpdatedClimber = name;
-      }
+        row.innerHTML = `
+          <td>${name}</td>
+          <td>${stats.topCount}</td>
+          <td>${stats.zoneCount}</td>
+          <td>${stats.attemptsToTop}</td>
+          <td>${stats.attemptsToZone}</td>
+          <td class="route-summary">${routeSummary}</td>
+        `;
 
-      if (name === lastUpdatedClimber) {
-        row.classList.add('highlighted');
-      }
+        if (!previousStats[name] || hasChanged(previousStats[name], stats)) {
+          lastUpdatedClimber = name;
+        }
 
-      tbody.appendChild(row);
-    });
+        if (name === lastUpdatedClimber) {
+          row.classList.add('highlighted');
+        }
 
-    previousStats = climberStats;
-    showUpdateBanner();
-  } catch (err) {
-    console.error('Error loading leaderboard:', err);
+        tbody.appendChild(row);
+      });
+
+      previousStats = climberStats;
+      showUpdateBanner();
+    } catch (err) {
+      console.error('Error loading leaderboard:', err);
+    }
   }
-}
 
   updateLeaderboard();
 </script>
+
 
 </body>
 </html>
