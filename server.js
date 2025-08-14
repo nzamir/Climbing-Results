@@ -197,3 +197,10 @@ function getBarHTML(status) {
   if (status === 'zone') return '<span class="bar half" data-label="Zone"></span>';
   return '<span class="bar empty" data-label="No score"></span>';
 }
+
+if (!stats.routeAttempts) stats.routeAttempts = {};
+
+stats.routeAttempts[route] = {
+  zone: r.ZoneOnAttempt || '',
+  top: r.TopOnAttempt || ''
+};
