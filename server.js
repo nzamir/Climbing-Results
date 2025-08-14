@@ -191,3 +191,9 @@ app.post('/upload-climbers', upload.single('csvFile'), (req, res) => {
       res.status(500).send('Failed to reload climber list.');
     });
 });
+
+function getBarHTML(status) {
+  if (status === 'top') return '<span class="bar full" data-label="Top"></span>';
+  if (status === 'zone') return '<span class="bar half" data-label="Zone"></span>';
+  return '<span class="bar empty" data-label="No score"></span>';
+}
