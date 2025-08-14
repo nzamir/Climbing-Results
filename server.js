@@ -99,12 +99,56 @@ app.get('/results.json', (req, res) => {
     const resultPath = path.join(__dirname, 'result.csv');
     const fileContent = fs.readFileSync(resultPath, 'utf8');
     const records = csvParse.parse(fileContent, { columns: true, skip_empty_lines: true });
-    res.json(records);
+
+    const climberStats = {};
+    const seenRoutes = new Set();
+
+    records.forEach(r => {
+      const name = r.Climber;
+      const route = r.Route;
+      const key = `${name}-${route}`;
+      if (seenRoutes.has(key)) return;
+      seenRoutes.add(key);
+
+      if (!climberStats[name]) {
+        climberStats[name] = {
+          topCount: 0,
+          zoneCount: 0,
+          attemptsToTop: 0,
+          attemptsToZone: 0,
+          routeStatus: {},
+          routeAttempts: {} // ✅ Add this here
+        };
+      }
+
+      const stats = climberStats[name];
+
+      if (r.HasTop === 'true') {
+        stats.topCount += 1;
+        stats.attemptsToTop += parseInt(r.TopOnAttempt || r.TotalAttempts || 0, 10);
+        stats.routeStatus[route] = 'top';
+      } else if (r.HasZone === 'true') {
+        stats.zoneCount += 1;
+        stats.attemptsToZone += parseInt(r.ZoneOnAttempt || r.TotalAttempts || 0, 10);
+        stats.routeStatus[route] = 'zone';
+      } else {
+        stats.routeStatus[route] = 'none';
+      }
+
+      // ✅ This is the correct place for routeAttempts
+      stats.routeAttempts[route] = {
+        zone: r.ZoneOnAttempt || '',
+        top: r.TopOnAttempt || ''
+      };
+    });
+
+    res.json(climberStats);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Error reading result.csv' });
   }
 });
+
 
 // ✅ Serve summary of submissions
 app.get('/summary.json', (req, res) => {
@@ -198,9 +242,4 @@ function getBarHTML(status) {
   return '<span class="bar empty" data-label="No score"></span>';
 }
 
-if (!stats.routeAttempts) stats.routeAttempts = {};
 
-stats.routeAttempts[route] = {
-  zone: r.ZoneOnAttempt || '',
-  top: r.TopOnAttempt || ''
-};
