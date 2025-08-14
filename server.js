@@ -123,17 +123,21 @@ app.get('/results.json', (req, res) => {
 
       const stats = climberStats[name];
 
-      if (r.HasTop === 'true') {
-        stats.topCount += 1;
-        stats.attemptsToTop += parseInt(r.TopOnAttempt || r.TotalAttempts || 0, 10);
-        stats.routeStatus[route] = 'top';
-      } else if (r.HasZone === 'true') {
-        stats.zoneCount += 1;
-        stats.attemptsToZone += parseInt(r.ZoneOnAttempt || r.TotalAttempts || 0, 10);
-        stats.routeStatus[route] = 'zone';
-      } else {
-        stats.routeStatus[route] = 'none';
-      }
+        if (r.HasZone === 'true') {
+          stats.zoneCount += 1;
+          stats.attemptsToZone += parseInt(r.ZoneOnAttempt || r.TotalAttempts || 0, 10);
+        }
+
+        if (r.HasTop === 'true') {
+          stats.topCount += 1;
+          stats.attemptsToTop += parseInt(r.TopOnAttempt || r.TotalAttempts || 0, 10);
+          stats.routeStatus[route] = 'top';
+        } else if (r.HasZone === 'true') {
+          stats.routeStatus[route] = 'zone';
+        } else {
+          stats.routeStatus[route] = 'none';
+        }
+
 
       // ✅ This is the correct place for routeAttempts
       stats.routeAttempts[route] = {
